@@ -596,7 +596,7 @@ action_list(As) ->
 	lists:foldl(
 		fun
 			({output,PortNo}, {Frame, TunnelId}) when is_atom(PortNo) ->
-				{Call(packet_in,[Frame,{var,0,var_name(in_port)}]), TunnelId};
+				{Call(packet_in,[Frame,{var,0,var_name(in_port)},{var,0,var_name(metadata)}]), TunnelId};
 			({output,PortNo}, {Frame, TunnelId}) ->
 				{Call(output,[Frame,{integer,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
 			({group,Group}, {Frame, TunnelId}) ->

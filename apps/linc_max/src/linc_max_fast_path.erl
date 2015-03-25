@@ -178,7 +178,11 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 		erlang:update_counter(RxPktRef),
 		erlang:update_counter(RxDataRef, byte_size(Frame)),
 
-		Metadata = <<0:64>>,
+		{Ms, S, Us} = os:timestamp(),
+		IngressTime = <<((Ms * 1000000 + S) * 1000000 + Us):64>>,
+		%% Metadata = <<0:64>>,
+		Metadata = IngressTime,
+
 		%% in_phy_port and tunnel_id are undefined
 		PortInfo = {PortNo,undefined,undefined},
 

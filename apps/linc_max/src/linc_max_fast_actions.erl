@@ -11,7 +11,7 @@
 -export([apply_list/3]).
 %% these functions are used in linc_max_generator and always expected to return a binary
 -export([
-	packet_in/2,
+	packet_in/3,
 	output/3,
 	set_queue/3,
 	group/3,
@@ -429,13 +429,19 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 	apply_list(ActionList, Frame1, Blaze).
 
 %%------------------------------------------------------------------------------
-packet_in(Frame, InPort) ->
+packet_in(Frame, InPort, Metadata) ->
 	%% TODO: fill all fields
+
+	{Ms, S, Us} = os:timestamp(),
+	EgressTime = <<((Ms * 1000000 + S) * 1000000 + Us):64>>,
+
 	PacketIn = #ofp_packet_in{
 		reason = action,
 		table_id = 0,
 		match = #ofp_match{fields = [
-			#ofp_field{name = in_port, value = <<InPort>>}
+			#ofp_field{name = in_port, value = <<InPort>>},
+			#ofp_field{name = metadata, value = Metadata},
+			#ofp_field{name = tunnel_id, value = EgressTime}
 		]},
 		data = Frame
 	},
