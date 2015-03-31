@@ -165,6 +165,8 @@ wrap_pattern(Pat, icmp6_tll =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, in_port =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
+wrap_pattern(Pat, metadata =Arg, _) ->
+	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, _Arg, _HasGoto) ->
 	Pat.
 
