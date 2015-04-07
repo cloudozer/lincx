@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+APP_DIR=/io/app/lincx
+
+install -D lincx.img $APP_DIR/lincx.img
+install -D priv/def.config $APP_DIR/def.config
+install -D scripts/lingd_script.erl $APP_DIR/lingd_script.erl

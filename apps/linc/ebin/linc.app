@@ -13,5 +13,5 @@
                     {serial_number,<<"Unknown">>},
                     {datapath_desc,<<"Unknown">>}]},
               {modules,[default_railing,gen_switch,linc,linc_backend,
-                        linc_buffer,linc_capable_sup,linc_logic,linc_ofconfig,
-                        linc_sup,user_default]}]}.
+                        linc_bootling,linc_buffer,linc_capable_sup,linc_logic,
+                        linc_ofconfig,linc_sup,lingd,user_default]}]}.
