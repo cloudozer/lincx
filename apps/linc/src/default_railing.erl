@@ -107,6 +107,14 @@ yml(Cfg) ->
 				" -gateway " ++ proplists:get_value("gateway", Fields)
 		end,
 
+	Xenbr0_Mac =
+		case proplists:get_value("ipconf", Opts) of
+			undefined ->
+				undefined;
+			V ->
+				proplists:get_value("vif_mac", V, undefined)
+		end,
+
 	{ListenIp, ListenPort} =
 		case proplists:get_value("listen", Opts) of
 			undefined ->
@@ -145,7 +153,7 @@ yml(Cfg) ->
 				"-secret " ++ S
 		end,
 
-	conf(Ports, Queues, Controllers, Ipconf, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
+	conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
 
 check_opt({"ipconf", Ipconf}) when is_list(Ipconf) ->
 	lists:foreach(
@@ -156,6 +164,8 @@ check_opt({"ipconf", Ipconf}) when is_list(Ipconf) ->
 				check_ip(Netmask);
 			({"gateway", Gateway}) ->
 				check_ip(Gateway);
+			({"vif_mac", VifMac}) when is_list(VifMac) ->
+				ok;
 			(Unknown) ->
 				throw(io_lib:format("unknown ipconf field: ~p", [Unknown]))
 		end,
@@ -347,7 +357,7 @@ read_erl(Conf) ->
 			Conf
 		),
 
-	conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount).
+	conf(Ports, Queues, Controllers, Ipconf, undefined, ListenerIp, ListenerPort, Memory, Mount).
 
 bridge(B) when is_atom(B) ->
 	atom_to_list(B);
@@ -361,7 +371,7 @@ addr({A,B,C,D}) ->
 addr(Addr) ->
 	Addr.
 
-conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount) ->
+conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenerIp, ListenerPort, Memory, Mount) ->
 	{ok, [SysConf]} = file:consult("priv/def.config"),
 	LincConf = [
 		{of_config,disabled},
@@ -399,7 +409,16 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 			Ports
 		),
 
-	[{vif, 'bridge=xenbr0'}] ++ Vifs ++
+	Xenbr0 =
+		case Xenbr0_Mac of
+			undefined ->
+				{vif, 'bridge=xenbr0'};
+			Mac ->
+				{vif, list_to_atom("bridge=xenbr0,mac=" ++ Mac)}
+		end,
+
+
+	[Xenbr0 | Vifs] ++
 	[
 		{extra, Ipconf},
 		{extra, Mount},
