@@ -275,7 +275,7 @@ read_erl(Conf) ->
 		lists:foldl(
 			fun
 				({port, PortNo}, Ports) ->
-					Ports ++ [{PortNo, bridge(PortNo), []}];
+					Ports ++ [{PortNo, bridge(PortNo), undefined, []}];
 				({port, PortNo, PortOps}, Ports) ->
 					Bridge =
 						case proplists:get_value(bridge, PortOps) of
