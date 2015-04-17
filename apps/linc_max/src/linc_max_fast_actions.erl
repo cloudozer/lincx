@@ -440,11 +440,12 @@ packet_in(Frame, InPort, Metadata) ->
 		table_id = 0,
 		match = #ofp_match{fields = [
 			#ofp_field{name = in_port, value = <<InPort>>},
-			#ofp_field{name = metadata, value = Metadata},
-			#ofp_field{name = tunnel_id, value = EgressTime}
+			#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = poc_timestamp1, value = Metadata}},
+			#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = poc_timestamp2, value = EgressTime}}
 		]},
 		data = Frame
 	},
+lager:info("packet_in ~p", [PacketIn]),
 	SwitchId = 0,
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
     Frame.
