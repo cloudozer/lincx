@@ -445,7 +445,8 @@ packet_in(Frame, InPort, Metadata) ->
 		]},
 		data = Frame
 	},
-lager:info("packet_in ~p", [PacketIn]),
+	lager:debug("packet_in: ~p", [PacketIn]),
+
 	SwitchId = 0,
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
     Frame.
