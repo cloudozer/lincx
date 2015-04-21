@@ -118,4 +118,4 @@ Check if networking is correctly setup
 # brctl show
 ```
 ## Step 5
-Now you are ready to install LINCX.  Please follow [instructions] (README.md)
+Now you are ready to install LINCX.  Please follow [instructions] (../README.md)
