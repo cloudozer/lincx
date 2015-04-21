@@ -11,7 +11,7 @@ LINCX is a new faster version of [LINC-Switch][oldlinc].
 
 ### Features
 
- * Support for [OpenFlow Protocol 1.2][ofp3] and [OpenFlow Protocol 1.3][ofp4],
+ * Support for [OpenFlow Protocol 1.3][ofp4],
  * Support for [OF-Config 1.1.1][ofc11] management protocol,
  * Modular architecture, easily extensible.
 
@@ -45,7 +45,7 @@ LINCX is a new faster version of [LINC-Switch][oldlinc].
 ### How to configure LINCX?
 
 lincx.config is the main configuration file of the LINCX switch. You can use the
-file lincx.config.sample as the starting point for you configuration file.
+file [lincx.config.sample](lincx.config.sample) as the starting point for you configuration file.
 
 `ipconf` option defines the TCP/IP networking setup. To configure TCP/IP
 statically use:
@@ -101,7 +101,7 @@ To set the memory size of the lincx domain (in MB, default = 1024):
 ```
 
 LINCX supports alternative format -- YAML -- of the configuration file. Rename
-the configuration file to lincx.yml to use YAML. See lincx.yml.sample as a
+the configuration file to lincx.yml to use YAML. See [lincx.yml.sample](lincx.yml.sample) as a
 starting point.
 
 ### Support
@@ -110,11 +110,10 @@ If you have any technical questions, problems or suggestions regarding LINCX
 please send them to <linc-dev@flowforwarding.org> mailing list or create an
 Issue. Thanks.
 
+
+
  [ovs]: http://openvswitch.org
- [ofp1]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.0.0.pdf
- [ofp2]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.1.0.pdf 
- [ofp3]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.2.pdf 
- [ofp4]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.3.0.pdf 
+ [ofp4]: https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow/openflow-switch-v1.3.4.pdf
  [ofc11]: https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow-config/of-config-1-1-1.pdf
  [oldlinc]: https://github.com/FlowForwarding/LINC-Switch
 
