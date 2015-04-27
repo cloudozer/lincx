@@ -434,18 +434,20 @@ packet_in(Frame, InPort, Metadata) ->
 
 	{Ms, S, Us} = os:timestamp(),
 	EgressTime = <<((Ms * 1000000 + S) * 1000000 + Us):64>>,
+	Metadata1 = [{poc_timestamp2, EgressTime} | Metadata],
+
+	ExperimenterFields = lists:map(fun({Name, Value}) ->
+		#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = Name, value = Value}}
+	end, Metadata1),
 
 	PacketIn = #ofp_packet_in{
 		reason = action,
 		table_id = 0,
 		match = #ofp_match{fields = [
-			#ofp_field{name = in_port, value = <<InPort>>},
-			#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = poc_timestamp1, value = Metadata}},
-			#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = poc_timestamp2, value = EgressTime}}
+			#ofp_field{name = in_port, value = <<InPort>>} | ExperimenterFields
 		]},
 		data = Frame
 	},
-	lager:debug("packet_in: ~p", [PacketIn]),
 
 	SwitchId = 0,
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),

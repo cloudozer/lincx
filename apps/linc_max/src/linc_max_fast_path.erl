@@ -172,7 +172,9 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 	{Outlet,{data,Frame}} ->
 		#port_info{port_no =PortNo,
 				   rx_pkt_ref =RxPktRef,
-				   rx_data_ref =RxDataRef} = 
+				   rx_data_ref =RxDataRef,
+				   tx_pkt_ref  =TxPktRef,
+				   tx_data_ref =TxDataRef} =
 						lists:keyfind(Outlet, #port_info.outlet, Ports),
 
 		erlang:update_counter(RxPktRef),
@@ -180,8 +182,24 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 
 		{Ms, S, Us} = os:timestamp(),
 		IngressTime = <<((Ms * 1000000 + S) * 1000000 + Us):64>>,
+
+		RxPktValue = erlang:read_counter(RxPktRef),
+		RxPktValueBin = <<RxPktValue:64>>,
+		RxDataValue = erlang:read_counter(RxDataRef),
+		RxDataValueBin = <<RxDataValue:64>>,
+		TxPktValue = erlang:read_counter(TxPktRef),
+		TxPktValueBin = <<TxPktValue:64>>,
+		TxDataValue = erlang:read_counter(TxDataRef),
+		TxDataValueBin = <<TxDataValue:64>>,
+
 		%% Metadata = <<0:64>>,
-		Metadata = IngressTime,
+		Metadata = [
+			{poc_timestamp1, IngressTime},
+			{poc_rx_pkt, RxPktValueBin},
+			{poc_rx_data, RxDataValueBin},
+			{poc_tx_pkt, TxPktValueBin},
+			{poc_tx_data, TxDataValueBin}
+		],
 
 		%% in_phy_port and tunnel_id are undefined
 		PortInfo = {PortNo,undefined,undefined},
