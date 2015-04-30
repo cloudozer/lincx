@@ -201,12 +201,25 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 			{poc_tx_data, TxDataValueBin}
 		],
 
+		Metadata1 = case lists:keyfind(PortNo, 1, QueueMap) of
+			{PortNo,QueuePid} ->
+				true = is_pid(QueuePid),
+				{ok, {Rmin, Rmax, R}} = linc_max_queue:get_state(QueuePid),
+				[
+					{poc_queue_state_rmin, <<Rmin:32/float>>},
+					{poc_queue_state_rmax, <<Rmax:32/float>>},
+					{poc_queue_state_r, <<R:32/float>>}
+				] ++ Metadata;
+			false ->
+				Metadata
+		end,
+
 		%% in_phy_port and tunnel_id are undefined
 		PortInfo = {PortNo,undefined,undefined},
 
 		%% Inject the frame into the pipeline
 		case linc_max_preparser:inject(Frame,
-				Metadata, PortInfo, #fast_actions{}, FlowTab0, Blaze) of
+				Metadata1, PortInfo, #fast_actions{}, FlowTab0, Blaze) of
 		{do,Frame1,Actions} ->
 			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
 		malformed ->

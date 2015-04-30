@@ -5,7 +5,7 @@
 %% @author Cloduozer LLP. <info@cloudozer.com>
 %% @copyright 2014 FlowForwarding.org
 -module(linc_max_queue).
--export([start_link/2,stop/1]).
+-export([start_link/2,stop/1,get_state/1]).
 
 -include_lib("linc/include/linc_logger.hrl").
 
@@ -40,6 +40,15 @@ stop(QueuePid) ->
 		ok
 	after 5000 ->
 		{error,timout}
+	end.
+
+get_state(QueuePid) ->
+	QueuePid ! {get_state, self()},
+	receive
+		{state, State} ->
+			{ok, State}
+		after 5000 ->
+			{error, timeout}
 	end.
 
 check_options(Opts) ->
@@ -91,7 +100,12 @@ loop(Outlet, Rmin, Rmax, R, T, Q, B, N, TRef) ->
 			new_rate(Outlet, Rmin, Rmax, R, T, Q, B, N +1);
 		true ->
 			new_rate(Outlet, Rmin, Rmax, R, T, queue:in(Frame, Q), B +size(Frame), N)
-		end
+		end;
+
+	{get_state, From} ->
+		From ! {state, {Rmin, Rmax, R}},
+		loop(Outlet, Rmin, Rmax, R, T, Q, B, N, TRef)
+
 	end.
 
 %% FAST PATH

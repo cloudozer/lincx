@@ -437,7 +437,7 @@ packet_in(Frame, InPort, Metadata) ->
 	Metadata1 = [{poc_timestamp2, EgressTime} | Metadata],
 
 	ExperimenterFields = lists:map(fun({Name, Value}) ->
-		#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = Name, value = Value}}
+		#ofp_oxm_experimenter{experimenter = ?INFOBLOX_EXPERIMENTER, body = #ofp_field{name = Name, value = Value, class = infoblox}}
 	end, Metadata1),
 
 	PacketIn = #ofp_packet_in{
