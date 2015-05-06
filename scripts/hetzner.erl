@@ -7,9 +7,9 @@
 %% Takes subnet number (172.16.X.0) as an argument.
 main([Arg]) ->
     Subnet = list_to_integer(Arg),
-
-    LincxDir = filename:join(lists:droplast(lists:droplast(
-        filename:split(filename:absname(escript:script_name()))))),
+    %% get root lincx dir by removing last two entries of script path
+    LincxDir = filename:join(lists:reverse(tl(tl(lists:reverse(
+        filename:split(filename:absname(escript:script_name()))))))),
     code:add_path(filename:join(LincxDir,"deps/of_protocol/ebin")),
 
     {ok, LSock} = gen_tcp:listen(6653, [binary, {packet, raw},{active, once},{reuseaddr, true}]),
