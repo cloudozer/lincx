@@ -26,6 +26,9 @@ main([Arg]) ->
     message(Sock, flow_mod(7,9)),
     message(Sock, flow_mod(8,9)),
 
+    message(Sock, group_mod()),
+    message(Sock, flow_mod3()),
+
     message(Sock, flow_mod2(9,1,Subnet)),
     message(Sock, flow_mod2(9,2,Subnet)),
     message(Sock, flow_mod2(9,3,Subnet)),
@@ -70,6 +73,39 @@ flow_mod2(InPort, OutPort, Subnet) ->
         match = #ofp_match{fields = Fields},
         instructions = [Instruction]
     }.
+
+flow_mod3() ->
+    Fields = [
+        #ofp_field{name = eth_type,value = <<2054:16>>}
+    ],
+
+    Instruction = #ofp_instruction_apply_actions{
+        actions = [#ofp_action_group{group_id = 1}]
+    },
+
+    #ofp_flow_mod{
+        table_id = 0,
+        command = add,
+        match = #ofp_match{fields = Fields},
+        instructions = [Instruction]
+    }.
+
+group_mod() ->
+    #ofp_group_mod{
+        command  = add,
+        type = all,
+        group_id = 1,
+        buckets = [
+            #ofp_bucket{actions = [#ofp_action_output{port = 1}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 2}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 3}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 4}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 5}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 6}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 7}]},
+            #ofp_bucket{actions = [#ofp_action_output{port = 8}]}
+        ]
+   }.
 
 message(Sock, Body) ->
     {ok, Bin} = 
