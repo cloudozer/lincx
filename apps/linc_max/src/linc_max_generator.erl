@@ -1,6 +1,6 @@
 -module(linc_max_generator).
 -export([flow_table_forms/3]).
--export([action_list/1]).
+-export([action_list/2]).
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
@@ -44,7 +44,7 @@ clauses([], Acc, TableCounts) ->
 
 
 clauses(
-	[#flow_entry{fields =Matches, instructions =Ins, counts =EntryCounts}|FlowEnts],
+	[#flow_entry{fields =Matches, instructions =Ins, counts =EntryCounts, cookie = Cookie}|FlowEnts],
 	Acc, TableCounts
 ) ->
 	case catch build_patterns(Matches, Ins) of
@@ -57,13 +57,13 @@ clauses(
 
 	Patterns when is_list(Patterns) ->
 		Clause = {clause,0,Patterns,[],
-			updated_counts(TableCounts, EntryCounts) ++ body(Ins)
+			updated_counts(TableCounts, EntryCounts) ++ body(Ins, Cookie)
 		},
 		clauses(FlowEnts, [Clause|Acc], TableCounts);
 
 	{Patterns,Guard} ->
 		Clause = {clause,0,Patterns,Guard,
-			updated_counts(TableCounts, EntryCounts) ++ body(Ins)
+			updated_counts(TableCounts, EntryCounts) ++ body(Ins, Cookie)
 		},
 		clauses(FlowEnts, [Clause|Acc], TableCounts)
 	end.
@@ -376,7 +376,7 @@ bin_elems(S, [{S,L,V}|Zs], Acc) ->
 
 %% Instruction compilation -----------------------------------------------------
 
-body(Ins) ->
+body(Ins, Cookie) ->
 	body(Ins,
 		undefined,	%% Meter
 		undefined,	%% Apply
@@ -384,28 +384,29 @@ body(Ins) ->
 		undefined,	%% Write
 		undefined,	%% Metadata
 		undefined,	%% TunnelId
-		undefined).	%% Goto
+		undefined,	%% Goto
+		Cookie).
 
-body(Ins, Meter, Apply, Clear, Write, Metadata, TunnelId, Goto) ->
+body(Ins, Meter, Apply, Clear, Write, Metadata, TunnelId, Goto, Cookie) ->
 	case Ins of
 		[] ->
-			compile_body(Meter, Apply, Clear, Write, Metadata, TunnelId, Goto);
+			compile_body(Meter, Apply, Clear, Write, Metadata, TunnelId, Goto, Cookie);
 		[#ofp_instruction_meter{meter_id=Id} | Rest] ->
-			body(Rest, {meter, Id}, Apply, Clear, Write, Metadata, TunnelId, Goto);
+			body(Rest, {meter, Id}, Apply, Clear, Write, Metadata, TunnelId, Goto, Cookie);
 		[#ofp_instruction_apply_actions{actions =As}|Rest] ->
-			{ActionList, Id} = action_list(As),
-			body(Rest, Meter, ActionList, Clear, Write, Metadata, Id, Goto);
+			{ActionList, Id} = action_list(As, Cookie),
+			body(Rest, Meter, ActionList, Clear, Write, Metadata, Id, Goto, Cookie);
 		[#ofp_instruction_clear_actions{}|Rest] ->
-			body(Rest, Meter, Apply, clear, Write, Metadata, TunnelId, Goto);
+			body(Rest, Meter, Apply, clear, Write, Metadata, TunnelId, Goto, Cookie);
 		[#ofp_instruction_write_actions{actions =Actions}|Rest] ->
-			body(Rest, Meter, Apply, Clear, Actions, Metadata, TunnelId, Goto);
+			body(Rest, Meter, Apply, Clear, Actions, Metadata, TunnelId, Goto, Cookie);
 		[#ofp_instruction_write_metadata{metadata = <<Value:64>>, metadata_mask = <<Mask:64>>}|Rest] ->
-			body(Rest, Meter, Apply, Clear, Write, {metadata,Value,Mask}, TunnelId, Goto);
+			body(Rest, Meter, Apply, Clear, Write, {metadata,Value,Mask}, TunnelId, Goto, Cookie);
 		[#ofp_instruction_goto_table{table_id =Id}|Rest] ->
-			body(Rest, Meter, Apply, Clear, Write, Metadata, TunnelId, {goto,Id})
+			body(Rest, Meter, Apply, Clear, Write, Metadata, TunnelId, {goto,Id}, Cookie)
 	end.
 
-compile_body(Meter, undefined, Clear, Write, _Metadata, _TunnelId, undefined) ->
+compile_body(Meter, undefined, Clear, Write, _Metadata, _TunnelId, undefined, _Cookie) ->
 	%%
 	%% No goto table - return (updated) action set
 	%%
@@ -417,7 +418,7 @@ compile_body(Meter, undefined, Clear, Write, _Metadata, _TunnelId, undefined) ->
 	}],
 	compile_meter(Meter, Goto);
 
-compile_body(Meter, ActionList, Clear, Write, _Metadata, _TunnelId, undefined) ->
+compile_body(Meter, ActionList, Clear, Write, _Metadata, _TunnelId, undefined, _Cookie) ->
 	%%
 	%% No goto table - apply action list and return (updated) action set
 	%%
@@ -430,7 +431,7 @@ compile_body(Meter, ActionList, Clear, Write, _Metadata, _TunnelId, undefined) -
 	}],
 	compile_meter(Meter, Return);
 
-compile_body(Meter, undefined, Clear, Write, Metadata, TunnelId, {goto,Id}) ->
+compile_body(Meter, undefined, Clear, Write, Metadata, TunnelId, {goto,Id}, _Cookie) ->
 	%%
 	%% match(...) ->
 	%%		flow_table_1:match(...).
@@ -457,7 +458,7 @@ compile_body(Meter, undefined, Clear, Write, Metadata, TunnelId, {goto,Id}) ->
 	Call = [{call,0,{remote,0,{atom,0,TabName},{atom,0,match}},As}],
 	compile_meter(Meter, Call);
 
-compile_body(Meter, ActionList, Clear, Write, Metadata, TunnelId, {goto,Id}) ->
+compile_body(Meter, ActionList, Clear, Write, Metadata, TunnelId, {goto,Id}, _Cookie) ->
 	%%
 	%% Apply action list to packet, update action set and metadata
 	%% and reinject them to preparser from next table
@@ -589,7 +590,7 @@ action_value(Name, [Name | _], Change, _Keep) ->
 action_value(Name, [_ | Rest], Change, Keep) ->
 	action_value(Name, Rest, Change, Keep).
 
-action_list(As) ->
+action_list(As, Cookie) ->
 	Call = 
 		fun(Function,Args) ->
 			{call,0,{remote,0,{atom,0,linc_max_fast_actions},{atom,0,Function}},Args}
@@ -598,7 +599,7 @@ action_list(As) ->
 	lists:foldl(
 		fun
 			({output,PortNo}, {Frame, TunnelId}) when is_atom(PortNo) ->
-				{Call(packet_in,[Frame,{var,0,var_name(in_port)},{var,0,var_name(metadata)}]), TunnelId};
+				{Call(packet_in,[Frame,{var,0,var_name(in_port)},{var,0,var_name(metadata)},{integer,0,Cookie}]), TunnelId};
 			({output,PortNo}, {Frame, TunnelId}) ->
 				{Call(output,[Frame,{integer,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
 			({group,Group}, {Frame, TunnelId}) ->
