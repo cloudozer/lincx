@@ -422,6 +422,9 @@ start_controllers_listener(ConnListenerArgs, LincSupPid) ->
     ConnListenerSupPid.
 
 get_datapath_mac() ->
+    "00:00:00:00:00:00".
+
+get_datapath_mac_old() ->
     {ok, Ifs} = inet:getifaddrs(),
     MACs =  [element(2, lists:keyfind(hwaddr, 1, Ps))
              || {_IF, Ps} <- Ifs, lists:keymember(hwaddr, 1, Ps)],

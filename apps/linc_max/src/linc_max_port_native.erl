@@ -5,7 +5,7 @@
 %% @author Cloudozer LLP. <info@cloudozer.com> 
 %% @copyright 2012 FlowForwarding.org
 -module(linc_max_port_native).
--export([vif/1]).
+-export([vif/1,raw/1]).
 
 %-define(VIF_MAILBOX_LIMIT, 131072).
 %-define(VIF_MAILBOX_LIMIT, 16384).
@@ -38,6 +38,14 @@ get_hw_addr(Interface) ->
                 {hwaddr, MAC} ->
                     list_to_binary(MAC)
             end
+    end.
+
+raw(Interface) ->
+    case gen_udp:open(0, [{udp_module,raw_link},{ifaddr, [Interface]}]) of
+        {ok,Port} ->
+            {ok, Port, <<0,0,0,0,0,0>>};
+        Error ->
+            Error
     end.
 
 %%EOF

@@ -81,6 +81,22 @@ open_ports(PortConfig) ->
 				?ERROR("Cannot open port: ~p", [Error]),
 				Ports
 			end;
+		raw ->
+			case linc_max_port_native:raw(IfName) of
+			{ok,Outlet,Mac} ->
+				?INFO("Open raw port ~p (~p)\n", [Outlet,Mac]),
+				Port = #port_info{port_no =PortNo,
+								  outlet =Outlet,
+								  hw_addr =Mac,
+								  rx_pkt_ref =erlang:new_counter(),
+								  rx_data_ref =erlang:new_counter(),
+								  tx_pkt_ref =erlang:new_counter(),
+								  tx_data_ref =erlang:new_counter()},
+				[Port|Ports];
+			{error,Error} ->
+				?ERROR("Cannot open port: ~p", [Error]),
+				Ports
+			end;
 		Type ->
 			?ERROR("Unsupported port type: ~p", [Type]),
 			Ports
