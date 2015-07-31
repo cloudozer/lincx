@@ -185,7 +185,8 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 		QueueMap1 = lists:keydelete(QueuePid, 2, QueueMap),
 		blaze(Blaze#blaze{queue_map =QueueMap1}, FlowTab0, ReigniteCounter);
 
-	{Outlet,{data,Frame}} ->
+	%{Outlet,{data,Frame}} ->
+	{udp, Outlet, _, _, Frame} ->
 		#port_info{port_no =PortNo,
 				   rx_pkt_ref =RxPktRef,
 				   rx_data_ref =RxDataRef} = 
