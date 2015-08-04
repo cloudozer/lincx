@@ -1,4 +1,8 @@
 ports:
-  - {id: 1, bridge: xenbr1}
+  - {id: 1, bridge: eth1}
+  - {id: 2, bridge: eth2}
 
-listen: 0.0.0.0:6653
+listen: 0.0.0.0:6654
+
+controllers:
+  - 127.0.0.1:6653

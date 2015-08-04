@@ -9,7 +9,9 @@ main(_) ->
         filename:split(filename:absname(escript:script_name()))))))),
     code:add_path(filename:join(LincxDir,"deps/of_protocol/ebin")),
 
-    {ok, Sock} = gen_tcp:connect("192.168.1.100",6653,[binary, {packet, raw},{reuseaddr, true}]),
+    {ok, LSock} = gen_tcp:listen(6653, [binary, {packet, raw},{active, once},{reuseaddr, true}]),
+    {ok, Sock} = gen_tcp:accept(LSock),
+%    {ok, Sock} = gen_tcp:connect("localhost",6653,[binary, {packet, raw},{reuseaddr, true}]),
 
     message(Sock, #ofp_hello{}),
 
