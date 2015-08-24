@@ -376,7 +376,7 @@ conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenerIp, ListenerPort, M
 	LincConf = [
 		{of_config,disabled},
 		{capable_switch_ports,
-			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,raw}]} || {Id,_,_,_} <- Ports]
+			[{port,Id,[{interface,BrName},{type,raw}]} || {Id,BrName,_,_} <- Ports]
 		},
 		{capable_switch_queues,
 			[{queue, Id, [{min_rate, Min}, {max_rate, Max}]} || {Id, Min, Max} <- Queues]

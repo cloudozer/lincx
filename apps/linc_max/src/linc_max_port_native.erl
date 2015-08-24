@@ -43,9 +43,18 @@ get_hw_addr(Interface) ->
 raw(Interface) ->
     case gen_udp:open(0, [{udp_module,raw_link},{ifaddr, [Interface]}]) of
         {ok,Port} ->
-            {ok, Port, <<0,0,0,0,0,0>>};
+            {ok, Port, mac(Interface)};
         Error ->
             Error
     end.
+
+mac(Ifname) ->
+	{ok, Iflist} = inet:getifaddrs(),
+	case proplists:get_value(Ifname, Iflist) of
+		undefined ->
+			<<0,0,0,0,0,0>>;
+		Ifopts ->
+			list_to_binary(proplists:get_value(hwaddr, Ifopts))
+	end.
 
 %%EOF
