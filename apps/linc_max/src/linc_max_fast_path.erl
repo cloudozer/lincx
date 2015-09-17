@@ -28,6 +28,7 @@ start(SwitchConfig, FlowTab0) ->
 	end)),
 
 	spawn(fun() ->
+		ok = wait_for_interfaces(PortConfig),
 		Ports = open_ports(PortConfig),
 		QueueMap = start_queues(Ports, QueueConfig),
 		blaze(#blaze{ports =Ports,queue_map =QueueMap}, FlowTab0)
@@ -60,6 +61,26 @@ last_will() ->
 	{'EXIT',Pid,Reason} ->
 		?ERROR("blaze ~p dies: ~p\n (fast path stalled)\n", [Pid,Reason])
 	end.
+
+wait_for_interfaces(PortConfig) ->
+	Ifs = [ proplists:get_value(interface, Opts) || {port,_PortNo,Opts} <- PortConfig ],
+	case missing_interfaces(Ifs) of
+		[]	 -> ok;
+		Ifs1 -> io:format("Port(s) ~s not added yet, waiting...\n", [if_list(Ifs1)]),
+				wait_for_interfaces1(Ifs) end.
+
+wait_for_interfaces1(Ifs) ->
+	timer:sleep(3000),
+	case missing_interfaces(Ifs) of
+		[]   -> io:format("All ports are added\n", []), ok;
+		Ifs1 -> io:format("Port(s) ~s still not added...\n", [if_list(Ifs1)]),
+				wait_for_interfaces1(Ifs) end.
+
+missing_interfaces(Ifs) ->
+	{ok,Info} = inet:getifaddrs(),
+	lists:filter(fun(If) -> not lists:keymember(If, 1, Info) end, Ifs).
+
+if_list(Ifs) -> string:join(Ifs, ", ").
 
 open_ports(PortConfig) ->
 	lists:foldl(fun({port,PortNo,Opts}, Ports) ->
