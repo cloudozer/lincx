@@ -101,7 +101,7 @@ start(BackendOpts) ->
       FlowTab0 = linc_max_flow:name(0), %% flow_0
       linc_max_fast_path:start(SwitchConfig1, FlowTab0),
 
-      %% the fast path must be the first to start as it is needed to desribe ports
+      %% the fast path must be the first to start as it is needed to describe ports
 
       {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
       BufferState = linc_buffer:initialize(SwitchId),

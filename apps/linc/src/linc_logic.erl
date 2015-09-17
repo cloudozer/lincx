@@ -24,6 +24,7 @@
 %% API
 -export([send_to_controllers/2,
          gen_datapath_id/1,
+         gen_datapath_id/2,
          %% Backend general
          get_datapath_id/1,
          set_datapath_id/2,
@@ -298,7 +299,8 @@ handle_info(timeout, #state{backend_mod = BackendMod,
                             config = Config} = State) ->
     %% Starting the backend and opening connections to the controllers as a
     %% first thing after the logic and the main supervisor started.
-    DatapathId = gen_datapath_id(SwitchId),
+    [{switch, _, LogicalSwitchConfig}] = Config,
+    DatapathId = gen_datapath_id(SwitchId, LogicalSwitchConfig),
     BackendOpts = lists:keystore(switch_id, 1, BackendState,
                                  {switch_id, SwitchId}),
     BackendOpts2 = lists:keystore(datapath_mac, 1, BackendOpts,
@@ -435,6 +437,14 @@ to_hex(<<B1:4, B2:4, Binary/binary>>, Hex) ->
     I1 = integer_to_list(B1, 16),
     I2 = integer_to_list(B2, 16),
     to_hex(Binary, [":", I2, I1 | Hex]).
+
+gen_datapath_id(SwitchId, Config) ->
+    case lists:keyfind(datapath_id, 1, Config) of
+        {datapath_id, Dpid} ->
+            Dpid;
+        false ->
+            gen_datapath_id(SwitchId)
+    end.
 
 gen_datapath_id(SwitchId) when SwitchId < 10 ->
     get_datapath_mac() ++ "00:0" ++ integer_to_list(SwitchId);
