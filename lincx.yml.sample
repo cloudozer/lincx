@@ -26,3 +26,5 @@ secret: e1b4721e253ef14456c4ace06e2857ab69537cdf c3324a51069edee7c42e4e9d7dd1dd4
   - 192.168.4.1 /var/log /log
 
 memory: 1024
+
+datapath-id: "01:02:03:04:05:06:07:08"

@@ -153,7 +153,7 @@ yml(Cfg) ->
 				"-secret " ++ S
 		end,
 
-	DPID = proplists:get_value("dpid", Opts),
+	DPID = proplists:get_value("datapath-id", Opts),
 
 	conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret, DPID).
 
@@ -187,7 +187,7 @@ check_opt({"secret", Secret}) when is_list(Secret) ->
 	ok;
 check_opt({"9p", NineP}) when is_list(NineP) ->
 	ok;
-check_opt({"dpid", DPID}) when is_list(DPID) ->
+check_opt({"datapath-id", DPID}) when is_list(DPID) ->
 	ok;
 check_opt(Unknown) ->
 	throw(io_lib:format("unknown option: ~p", [Unknown])).
