@@ -1296,8 +1296,12 @@ logical_switch_port_rate(PortConfig) ->
     end.
 
 add_datapath_id_to_logical_switch({switch, SwitchId, LogicalSwitchConfig}) ->
-    {switch, SwitchId, [{datapath_id, linc_logic:gen_datapath_id(SwitchId)}
-                        | LogicalSwitchConfig]}.
+  case lists:keyfind(datapath_id, 1, LogicalSwitchConfig) of
+    false ->
+      {switch, SwitchId, [{datapath_id, linc_logic:gen_datapath_id(SwitchId, LogicalSwitchConfig)}| LogicalSwitchConfig]};
+    _ -> %% already there
+      {switch, SwitchId, LogicalSwitchConfig}
+  end.
 
 convert_logical_switch_ports({switch, SwitchId, LogicalSwitchConfig}) ->
     LogicalPorts = proplists:get_value(ports, LogicalSwitchConfig),

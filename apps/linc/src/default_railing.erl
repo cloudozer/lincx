@@ -153,7 +153,9 @@ yml(Cfg) ->
 				"-secret " ++ S
 		end,
 
-	conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
+	DPID = proplists:get_value("dpid", Opts),
+
+	conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret, DPID).
 
 check_opt({"ipconf", Ipconf}) when is_list(Ipconf) ->
 	lists:foreach(
@@ -184,6 +186,8 @@ check_opt({"memory", Memory}) when is_integer(Memory) ->
 check_opt({"secret", Secret}) when is_list(Secret) ->
 	ok;
 check_opt({"9p", NineP}) when is_list(NineP) ->
+	ok;
+check_opt({"dpid", DPID}) when is_list(DPID) ->
 	ok;
 check_opt(Unknown) ->
 	throw(io_lib:format("unknown option: ~p", [Unknown])).
@@ -357,7 +361,7 @@ read_erl(Conf) ->
 			Conf
 		),
 
-	conf(Ports, Queues, Controllers, Ipconf, undefined, ListenerIp, ListenerPort, Memory, Mount).
+	conf(Ports, Queues, Controllers, Ipconf, undefined, ListenerIp, ListenerPort, Memory, Mount, undefined).
 
 bridge(B) when is_atom(B) ->
 	atom_to_list(B);
@@ -371,8 +375,27 @@ addr({A,B,C,D}) ->
 addr(Addr) ->
 	Addr.
 
-conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenerIp, ListenerPort, Memory, Mount) ->
+conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenerIp, ListenerPort, Memory, Mount, DPID) ->
 	{ok, [SysConf]} = file:consult("priv/def.config"),
+
+	LogicalConf = [
+		{backend,linc_max},
+		{controllers,
+			[{Addr, Addr, Port, tcp} || {Addr, Port} <- Controllers]
+		},
+		{controllers_listener, {ListenerIp, ListenerPort, tcp}},
+		{queues_status, disabled},
+		{ports, [{port,Id,{queues,Queue}} || {Id,_,_,Queue} <- Ports]}
+	],
+
+	LogicalConf1 =
+		if
+			DPID =:= undefined ->
+				LogicalConf;
+			true ->
+				[{datapath_id, DPID} | LogicalConf]
+		end,
+
 	LincConf = [
 		{of_config,disabled},
 		{capable_switch_ports,
@@ -382,15 +405,7 @@ conf(Ports, Queues, Controllers, Ipconf, Xenbr0_Mac, ListenerIp, ListenerPort, M
 			[{queue, Id, [{min_rate, Min}, {max_rate, Max}]} || {Id, Min, Max} <- Queues]
 		},
 		{logical_switches,
-			[{switch,0,[
-				{backend,linc_max},
-				{controllers,
-					[{Addr, Addr, Port, tcp} || {Addr, Port} <- Controllers]
-				},
-				{controllers_listener, {ListenerIp, ListenerPort, tcp}},
-				{queues_status, disabled},
-				{ports, [{port,Id,{queues,Queue}} || {Id,_,_,Queue} <- Ports]}
-			]}]
+			[{switch,0,LogicalConf1}]
 		}
 	],
 
