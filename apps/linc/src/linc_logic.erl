@@ -258,8 +258,8 @@ handle_cast({send_to_controllers, Message},
 handle_cast({set_datapath_id, DatapathId},
             #state{backend_mod = Backend,
                    backend_state = BackendState} = State) ->
-    BackendState2 = Backend:set_datapath_mac(BackendState,
-                                             extract_mac(DatapathId)),
+    BackendState2 = Backend:set_datapath_id(BackendState,
+                                             encode_datapath_id(DatapathId)),
     {noreply, State#state{backend_state = BackendState2,
                           datapath_id = DatapathId}};
 handle_cast({set_port_config, PortNo, PortConfig},
@@ -303,8 +303,8 @@ handle_info(timeout, #state{backend_mod = BackendMod,
     DatapathId = gen_datapath_id(SwitchId, LogicalSwitchConfig),
     BackendOpts = lists:keystore(switch_id, 1, BackendState,
                                  {switch_id, SwitchId}),
-    BackendOpts2 = lists:keystore(datapath_mac, 1, BackendOpts,
-                                  {datapath_mac, extract_mac(DatapathId)}),
+    BackendOpts2 = lists:keystore(datapath_id, 1, BackendOpts,
+                                  {datapath_id, encode_datapath_id(DatapathId)}),
     BackendOpts3 = lists:keystore(config, 1, BackendOpts2,
                                   {config, Config}),
     case BackendMod:start(BackendOpts3) of
@@ -457,17 +457,17 @@ gen_datapath_id(SwitchId) when SwitchId < 10000 ->
     get_datapath_mac() ++ integer_to_list(SwitchId div 100) ++
         ":" ++ integer_to_list(SwitchId rem 100).
 
-extract_mac(DatapathId) ->
-    Str = re:replace(string:substr(DatapathId, 1, 17), ":", "",
+encode_datapath_id(DatapathId) ->
+    Str = re:replace(string:substr(DatapathId, 1, 23), ":", "",
                      [global, {return, list}]),
-    extract_mac(Str, <<>>).
+    encode_datapath_id(Str, <<>>).
 
-extract_mac([], Mac) ->
-    Mac;
-extract_mac([N1, N2 | Rest], Mac) ->
+encode_datapath_id([], Bin) ->
+    Bin;
+encode_datapath_id([N1, N2 | Rest], Bin) ->
     B1 = list_to_integer([N1], 16),
     B2 = list_to_integer([N2], 16),
-    extract_mac(Rest, <<Mac/binary, B1:4, B2:4>>).
+    encode_datapath_id(Rest, <<Bin/binary, B1:4, B2:4>>).
 
 ofp_channel_send(Id, Backend, Message) ->
     %% ofp_channel:send() can generate an exception, workaround this

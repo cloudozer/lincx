@@ -30,7 +30,7 @@
 %% Backend API
 -export([is_port_valid/2,
          is_queue_valid/3,
-         set_datapath_mac/2,
+         set_datapath_id/2,
          log_message_sent/1]).
 
 %% Handle all message types
@@ -69,7 +69,7 @@
 -record(state, {
   buffer_state,
   switch_id :: integer(),
-  datapath_mac :: binary(),
+  datapath_id :: binary(),
   switch_config = [{flags, []}, {miss_send_len, no_buffer}] :: [switch_config_opt()]
 }).
 -type state() :: #state{}.
@@ -103,7 +103,7 @@ start(BackendOpts) ->
 
       %% the fast path must be the first to start as it is needed to describe ports
 
-      {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
+      {datapath_id, DatapathID} = lists:keyfind(datapath_id, 1, BackendOpts),
       BufferState = linc_buffer:initialize(SwitchId),
 
       linc_max_port:initialize(SwitchId, Config),
@@ -113,7 +113,7 @@ start(BackendOpts) ->
       {ok, 4, #state{
           buffer_state = BufferState,
           switch_id = SwitchId,
-          datapath_mac = DatapathMac
+          datapath_id = DatapathID
         }
       }
     catch
@@ -177,8 +177,8 @@ is_port_valid(SwitchId, PortNo) ->
 is_queue_valid(SwitchId, PortNo, QueueId) ->
     linc_max_queue:is_valid(SwitchId, PortNo, QueueId).
 
-set_datapath_mac(State, NewMac) ->
-    State#state{datapath_mac = NewMac}.
+set_datapath_id(State, DatapathID) ->
+    State#state{datapath_id = DatapathID}.
 
 -spec log_message_sent(ofp_message()) -> term().
 log_message_sent(#ofp_message{body = Body} = Message)
@@ -192,11 +192,12 @@ log_message_sent(Message) ->
 %%% Handling of messages
 %%%-----------------------------------------------------------------------------
 
-ofp_features_request(#state{switch_id = SwitchId,
-                            datapath_mac = DatapathMac} = State,
+ofp_features_request(#state{switch_id = _SwitchId,
+                            datapath_id = DatapathID} = State,
                      #ofp_features_request{}) ->
-    FeaturesReply = #ofp_features_reply{datapath_mac = DatapathMac,
-                                        datapath_id = SwitchId,
+    <<KindaID:16, KindaMAC/binary>> = DatapathID,
+    FeaturesReply = #ofp_features_reply{datapath_mac = KindaMAC,
+                                        datapath_id = KindaID,
                                         n_buffers = 0,
                                         n_tables = 255,
                                         auxiliary_id = 0,
